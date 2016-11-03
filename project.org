@@ -1,27 +1,35 @@
 #+TITLE: Project Board
 
 * Tasks
-** TODO Refine idea and write description                              :gop:
+** DONE Refine idea and write description                               :gop:
 
 * Idea
 A model that generates convolutional filters using a pattern producing network
 and conditioned on local input patch. Inspired by works on hyper networks and
-dynamic filtering networks.
+dynamic filtering networks. 
 
 * Structure
 Each layer will have a generator model which will create a filter using input
 and output coordinates and, possibly distance from center (for radial symmetry).
-This filter will pass through another network which will modify it using local
-input patches to give a commplete set of networks for the whole input image.
+This filter will be fine tuned (adapted), which will modify it using local
+input patches to give different filters for different positions of the input.
+The output will be convolution of these filters with the input corresponding to
+input patch from where they are generated (in the fine tuning/adaptation stage).
 /These two steps can be merged in a single model, depends on how modular we want
 everything to be./
 
 * Experiments
+** Analyzing learned filters
+   - Looking for symmetries in the filters.
+   - Qualitative comparison of the learned filter with the dynamic filter
+     approach and PPN approach.
+   - Comparative study of dimensionality of learnable paramters and
+     computational time 
 ** Image classification
-** Analyzing learned filters 
 
 * Expectations
-Being conditioned on local input patches, it should be better in cases with a
-definite local meaning in images, e.g. in video game frames where there are
-special regions with fixed displays, or places where the peripheral vision has
-something that can be exploited.
+  - Being conditioned on local input patches, it should be better in cases with
+    a definite local meaning in images, e.g. in video game frames where there
+    are special regions with fixed displays, or places where the peripheral
+    vision has something that can be exploited.
+  - Finding the cases where this exploitation of local filters fails.
