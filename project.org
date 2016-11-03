@@ -1,7 +1,7 @@
 #+TITLE: Project Board
 
 * Tasks
-** Refine idea and write description                                   :gop:
+** TODO Refine idea and write description                              :gop:
 
 * Idea
 A model that generates convolutional filters using a pattern producing network
