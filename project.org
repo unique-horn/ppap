@@ -1,6 +1,27 @@
-#+TITLE: Project board
+#+TITLE: Project Board
+
+* Tasks
+** Refine idea and write description                                   :gop:
 
 * Idea
 A model that generates convolutional filters using a pattern producing network
 and conditioned on local input patch. Inspired by works on hyper networks and
 dynamic filtering networks.
+
+* Structure
+Each layer will have a generator model which will create a filter using input
+and output coordinates and, possibly distance from center (for radial symmetry).
+This filter will pass through another network which will modify it using local
+input patches to give a commplete set of networks for the whole input image.
+/These two steps can be merged in a single model, depends on how modular we want
+everything to be./
+
+* Experiments
+** Image classification
+** Analyzing learned filters 
+
+* Expectations
+Being conditioned on local input patches, it should be better in cases with a
+definite local meaning in images, e.g. in video game frames where there are
+special regions with fixed displays, or places where the peripheral vision has
+something that can be exploited.
