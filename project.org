@@ -1,8 +1,5 @@
 #+TITLE: Project Board
 
-* Tasks
-** DONE Refine idea and write description                               :gop:
-
 * Idea
 A model that generates convolutional filters using a pattern producing network
 and conditioned on local input patch. Inspired by works on hyper networks and
