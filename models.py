@@ -14,17 +14,17 @@ class PPNGen(object):
     Pattern Producing network class
     """
 
-    def __init__(self, output_size, layer_sizes):
+    def __init__(self, output_shape, layer_sizes):
         """
         Parameters
         ----------
-        output_size : list_like
+        output_shape : list_like
             Size of the generated matrix (x, y)
         layer_sizes : array_like
             List of nodes in hidden layers
         """
 
-        self.output_size = output_size
+        self.output_shape = output_shape
         self.layer_sizes = layer_sizes
 
         # List of weight matrices to learn
@@ -62,6 +62,23 @@ class PPNGen(object):
         Generate an output matrix
         """
 
-        # Generate random data
-        return self.generator_function(np.random.rand(10, 3).astype(
-            theano.config.floatX))
+        x = np.arange(self.output_shape[0]) - self.output_shape[0] // 2
+        y = np.arange(self.output_shape[1]) - self.output_shape[1] // 2
+        x = x / x.max()
+        y = y / y.max()
+
+        # Generate coordinate data
+        X, Y = np.meshgrid(x, y)
+        R = (X**2) + (Y**2)
+
+        total_values = np.prod(self.output_shape)
+
+        # Unravelled
+        Y_r = Y.reshape(total_values)
+        X_r = X.reshape(total_values)
+        R_r = R.reshape(total_values)
+
+        vector_data = self.generator_function(np.vstack(
+            [X_r, Y_r, R_r]).T.astype(theano.config.floatX))
+
+        return vector_data.reshape(*self.output_shape)
