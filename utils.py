@@ -3,6 +3,7 @@ Utility belt
 """
 
 import numpy as np
+import scipy.misc as smp
 import theano
 
 
@@ -29,3 +30,24 @@ def shared_matrix(size, low=-1, high=1):
                                            low=low,
                                            high=high).astype(
                                                theano.config.floatX))
+
+
+def show_image(image_data):
+    """
+    Display image from data
+
+    Parameters
+    ----------
+    image_data : ndarray
+    """
+
+    img = smp.toimage(image_data)
+    img.show()
+
+
+def save_image(image_data, save_path):
+    """
+    Save image to given path
+    """
+
+    smp.toimage(image_data).save(save_path)
