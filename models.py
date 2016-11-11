@@ -40,7 +40,7 @@ class PPNGen(object):
 
     def _generator(self):
         """
-        Return a theano function that generates data from unravelled
+        Return a theano function that generates matrix from unravelled
         coordinates
         """
 
@@ -55,7 +55,9 @@ class PPNGen(object):
             layer_outs.append(theano.scan(lambda c: T.dot(c, self.weights[i]),
                                           sequences=layer_outs[i - 1])[0])
 
-        return theano.function(inputs=[coordinates], outputs=layer_outs[-1])
+        shaped_output = layer_outs[-1].reshape(self.output_shape)
+
+        return theano.function(inputs=[coordinates], outputs=shaped_output)
 
     def generate(self):
         """
@@ -78,7 +80,5 @@ class PPNGen(object):
         X_r = X.reshape(total_values)
         R_r = R.reshape(total_values)
 
-        vector_data = self.generator_function(np.vstack(
-            [X_r, Y_r, R_r]).T.astype(theano.config.floatX))
-
-        return vector_data.reshape(*self.output_shape)
+        return self.generator_function(np.vstack([X_r, Y_r, R_r]).T.astype(
+            theano.config.floatX))
