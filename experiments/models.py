@@ -6,7 +6,7 @@ import numpy as np
 import theano
 import theano.tensor as T
 
-from utils import shared_matrix
+from .utils import shared_matrix
 
 
 class PPNGen(object):
