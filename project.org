@@ -1,5 +1,15 @@
 #+TITLE: Project Board
 
+* Todos
+** Keras layers
+*** Simple PPN
+DEADLINE: <2016-11-13 Sun>
+Outputting generated data directly. Will be used directly with image targets.
+*** PPConv
+DEADLINE: <2016-11-13 Sun>
+Generate convolution filter and convolve input with it.
+*** PPConv + Locality filter
+Next leg of experiments. Fill later
 * Idea
 A model that generates convolutional filters using a pattern producing network
 and conditioned on local input patch. Inspired by works on hyper networks and
