@@ -46,14 +46,10 @@ class PPNGen(object):
 
         coordinates = T.matrix('coordinates')
 
-        layer_outs = []
-
-        layer_outs.append(theano.scan(lambda c: T.dot(c, self.weights[0]),
-                                      sequences=coordinates)[0])
+        layer_outs = [T.dot(coordinates, self.weights[0])]
 
         for i in range(1, len(self.weights)):
-            layer_outs.append(theano.scan(lambda c: T.dot(c, self.weights[i]),
-                                          sequences=layer_outs[i - 1])[0])
+            layer_outs.append(T.dot(layer_outs[i - 1], self.weights[i]))
 
         shaped_output = layer_outs[-1].reshape(self.output_shape)
 
