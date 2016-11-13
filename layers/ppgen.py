@@ -68,11 +68,14 @@ class PPGenMatrix(Layer):
         """
         """
 
-        layer_outs = [K.dot(self.coordinates, self.weights[0])]
+        layer_outs = [K.tanh(K.dot(self.coordinates, self.weights[0]))]
 
-        for i in range(1, len(self.weights)):
-            layer_outs.append(K.dot(layer_outs[i - 1], self.weights[i]))
+        for i in range(1, len(self.weights) - 1):
+            layer_outs.append(K.tanh(K.dot(layer_outs[i - 1], self.weights[
+                i])))
 
-        a = K.reshape(layer_outs[-1][:, 0], (self.matrix_shape))
+        output = K.sigmoid(K.dot(layer_outs[-1], self.weights[-1]))
+
+        a = K.reshape(output[:, 0], (self.matrix_shape))
 
         return K.expand_dims(a, 0)
