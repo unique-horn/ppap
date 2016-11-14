@@ -64,7 +64,7 @@ class PPGenMatrix(Layer):
 
         # Generate coordinate data
         X, Y = np.meshgrid(x, y)
-        R = (X**2) + (Y**2)
+        R = np.sqrt((X**2) + (Y**2))
 
         total_values = np.prod(self.matrix_shape)
 
