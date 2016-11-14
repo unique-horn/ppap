@@ -10,6 +10,7 @@ DEADLINE: <2016-11-13 Sun>
 Generate convolution filter and convolve input with it.
 *** PPConv + Locality filter
 Next leg of experiments. Fill later
+*** Adaptive masking                                              :abhinav:
 * Idea
 A model that generates convolutional filters using a pattern producing network
 and conditioned on local input patch. Inspired by works on hyper networks and
