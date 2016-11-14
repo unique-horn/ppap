@@ -17,29 +17,43 @@ class PPGenMatrix(Layer):
     def __init__(self,
                  matrix_shape,
                  layer_sizes,
+                 scale=5.0,
                  init="glorot_uniform",
                  **kwargs):
         self.init = initializations.get(init)
+        self.bias_init = initializations.get("zero")
         self.matrix_shape = matrix_shape
         self.layer_sizes = layer_sizes
+        self.scale = scale
         super(PPGenMatrix, self).__init__(**kwargs)
 
     def build(self, input_shape):
         """
         """
 
-        weights = [self.init((3, self.layer_sizes[0]), name="in")]
+        weights = [self.init((3, self.layer_sizes[0]), "W0")]
+        biases = [self.bias_init((self.layer_sizes[0], ), "b0")]
+
         for i in range(1, len(self.layer_sizes)):
             weights.append(self.init(
-                (self.layer_sizes[i - 1], self.layer_sizes[i]),
-                name="weight" + str(i)))
-        weights.append(self.init((self.layer_sizes[-1], 1), name="out"))
+                (self.layer_sizes[i - 1], self.layer_sizes[i]), "W" + str(i)))
+            biases.append(self.bias_init(
+                (self.layer_sizes[i], ), "b" + str(i)))
+
+        weights.append(self.init((self.layer_sizes[-1], 1), "We"))
+        biases.append(self.bias_init((1, ), "be"))
+
+        self.Ws = weights
+        self.bs = biases
 
         # Generate coordinate data
         x = np.arange(self.matrix_shape[0]) - self.matrix_shape[0] // 2
         y = np.arange(self.matrix_shape[1]) - self.matrix_shape[1] // 2
         x = x / x.max()
         y = y / y.max()
+
+        x *= self.scale
+        y *= self.scale
 
         # Generate coordinate data
         X, Y = np.meshgrid(x, y)
@@ -54,7 +68,7 @@ class PPGenMatrix(Layer):
 
         self.coordinates = K.variable(value=np.vstack([X_r, Y_r, R_r]).T)
 
-        self.trainable_weights = weights
+        self.trainable_weights = self.Ws + self.bs
 
         self.built = True
 
@@ -68,13 +82,12 @@ class PPGenMatrix(Layer):
         """
         """
 
-        layer_outs = [K.tanh(K.dot(self.coordinates, self.weights[0]))]
+        output = K.tanh(K.dot(self.coordinates, self.Ws[0]) + self.bs[0])
 
-        for i in range(1, len(self.weights) - 1):
-            layer_outs.append(K.tanh(K.dot(layer_outs[i - 1], self.weights[
-                i])))
+        for i in range(1, len(self.layer_sizes)):
+            output = K.tanh(K.dot(output, self.Ws[i]) + self.bs[i])
 
-        output = K.sigmoid(K.dot(layer_outs[-1], self.weights[-1]))
+        output = K.sigmoid(K.dot(output, self.Ws[-1]) + self.bs[-1])
 
         a = K.reshape(output[:, 0], (self.matrix_shape))
 
