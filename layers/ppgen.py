@@ -17,6 +17,7 @@ class PPGenMatrix(Layer):
     def __init__(self,
                  matrix_shape,
                  layer_sizes,
+                 z_dim,
                  scale=5.0,
                  init="glorot_uniform",
                  **kwargs):
@@ -24,12 +25,17 @@ class PPGenMatrix(Layer):
         self.bias_init = initializations.get("zero")
         self.matrix_shape = matrix_shape
         self.layer_sizes = layer_sizes
+        self.input_dim = z_dim
         self.scale = scale
+
+        kwargs["input_shape"] = (self.input_dim, )
         super(PPGenMatrix, self).__init__(**kwargs)
 
     def build(self, input_shape):
         """
         """
+
+        weight_z = self.init((input_shape[1], self.layer_sizes[0]), "Wz")
 
         weights = [self.init((3, self.layer_sizes[0]), "W0")]
         biases = [self.bias_init((self.layer_sizes[0], ), "b0")]
@@ -43,6 +49,7 @@ class PPGenMatrix(Layer):
         weights.append(self.init((self.layer_sizes[-1], 1), "We"))
         biases.append(self.bias_init((1, ), "be"))
 
+        self.Wz = weight_z
         self.Ws = weights
         self.bs = biases
 
@@ -68,7 +75,7 @@ class PPGenMatrix(Layer):
 
         self.coordinates = K.variable(value=np.vstack([X_r, Y_r, R_r]).T)
 
-        self.trainable_weights = self.Ws + self.bs
+        self.trainable_weights = self.Ws + self.bs + [self.Wz]
 
         self.built = True
 
@@ -82,13 +89,29 @@ class PPGenMatrix(Layer):
         """
         """
 
-        output = K.tanh(K.dot(self.coordinates, self.Ws[0]) + self.bs[0])
+        total_values = np.prod(self.matrix_shape)
+        batch_total = total_values * z.shape[0]
+
+        # Expand z on pixel dimension
+        z_rep = K.repeat_elements(
+            K.expand_dims(z, 1), total_values, 1) * self.scale
+
+        # Expand coordinates on batch dimension
+        coords_rep = K.repeat_elements(
+            K.expand_dims(self.coordinates, 0), z.shape[0], 0)
+
+        # Merge top two dimensions
+        coords_rep = K.reshape(coords_rep,
+                               (batch_total, self.coordinates.shape[1]))
+        z_rep = K.reshape(z_rep, (batch_total, z.shape[1]))
+
+        # Add z and coords to first layer
+        output = K.sin(K.dot(coords_rep, self.Ws[0]) + self.bs[0] + K.dot(
+            z_rep, self.Wz))
 
         for i in range(1, len(self.layer_sizes)):
             output = K.tanh(K.dot(output, self.Ws[i]) + self.bs[i])
 
         output = K.sigmoid(K.dot(output, self.Ws[-1]) + self.bs[-1])
 
-        a = K.reshape(output[:, 0], (self.matrix_shape))
-
-        return K.expand_dims(a, 0)
+        return K.reshape(output, (z.shape[0], *self.matrix_shape))
