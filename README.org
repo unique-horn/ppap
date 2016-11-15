@@ -1,3 +1,0 @@
-#+TITLE: ppap
-
-Experiments with pattern producing networks

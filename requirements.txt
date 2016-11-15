@@ -1,6 +1,2 @@
 numpy
-Pillow
-scipy
-scikit-learn
-theano
-keras
+keras>=1.1.0

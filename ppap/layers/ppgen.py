@@ -4,7 +4,7 @@ Simple PPN based generative layers
 
 import numpy as np
 from keras import backend as K
-from keras import activations, initializations
+from keras import initializations
 from keras.engine.topology import Layer
 
 
@@ -21,6 +21,21 @@ class PPGenMatrix(Layer):
                  scale=5.0,
                  init="glorot_uniform",
                  **kwargs):
+        """
+        Parameters
+        ----------
+        matrix_shape : list_like
+            Shape of output
+        layer_sizes : list_like
+            List of number of hidden nodes in layers of generator
+        z_dim : int
+            Dimension of input vector
+        scale : float
+            Range of internal coordinate representation (-scale, scale)
+        init : str
+            Keras initializer to use for generator weights (not bias)
+        """
+
         self.init = initializations.get(init)
         self.bias_init = initializations.get("zero")
         self.matrix_shape = matrix_shape
