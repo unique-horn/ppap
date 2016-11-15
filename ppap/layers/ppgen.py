@@ -44,7 +44,7 @@ class PPGenMatrix(Layer):
         self.scale = scale
 
         kwargs["input_shape"] = (self.input_dim, )
-        super(PPGenMatrix, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def build(self, input_shape):
         """
