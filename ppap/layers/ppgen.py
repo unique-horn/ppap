@@ -7,6 +7,8 @@ from keras import backend as K
 from keras import initializations
 from keras.engine.topology import Layer
 
+from .. import generators
+
 
 class PPGenMatrix(Layer):
     """
@@ -68,27 +70,8 @@ class PPGenMatrix(Layer):
         self.Ws = weights
         self.bs = biases
 
-        # Generate coordinate data
-        x = np.arange(self.matrix_shape[0]) - self.matrix_shape[0] // 2
-        y = np.arange(self.matrix_shape[1]) - self.matrix_shape[1] // 2
-        x = x / x.max()
-        y = y / y.max()
-
-        x *= self.scale
-        y *= self.scale
-
-        # Generate coordinate data
-        X, Y = np.meshgrid(x, y)
-        R = np.sqrt((X**2) + (Y**2))
-
-        total_values = np.prod(self.matrix_shape)
-
-        # Unravelled
-        Y_r = Y.reshape(total_values)
-        X_r = X.reshape(total_values)
-        R_r = R.reshape(total_values)
-
-        self.coordinates = K.variable(value=np.vstack([X_r, Y_r, R_r]).T)
+        self.coordinates = generators.get_coordinates(self.matrix_shape,
+                                                      scale=self.scale)
 
         self.trainable_weights = self.Ws + self.bs + [self.Wz]
 
