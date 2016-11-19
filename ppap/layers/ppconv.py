@@ -40,7 +40,8 @@ class PPConv(Layer):
 
     def build(self, input_dim):
         self.W = self.ppn_gen.output  # PPN generator output, used as filter
-        self.gen_weights = self.ppn_gen.weights  # Weight of the generator
+        self.gen_weights = self.ppn_gen.weights + self.ppn_gen.biases  # Weight of the generator
+
         self.b = K.zeros((self.nb_filters))
         self.trainable_weights = self.gen_weights + [self.b]
         self.non_trainable_weights = [self.W]

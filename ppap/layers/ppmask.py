@@ -30,7 +30,7 @@ class PPAdaptiveMask(Layer):
 
         self.mask = self.gen.output
 
-        self.trainable_weights = self.gen.weights
+        self.trainable_weights = self.gen.weights + self.gen.biases
         self.non_trainable_weights = [self.mask]
 
         self.built = True

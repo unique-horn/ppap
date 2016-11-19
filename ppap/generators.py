@@ -28,6 +28,7 @@ class FFMatrixGen(object):
         self.output_shape = output_shape
         self.layer_sizes = layer_sizes
         self.init = initializations.get(init)
+        self.bias_init = initializations.get("zero")
 
         self.setup_weights()
         self.setup_output()
@@ -43,6 +44,8 @@ class FFMatrixGen(object):
         self.weights = [self.init((l_sizes[i], l_sizes[i + 1]))
                         for i in range(len(l_sizes) - 1)]
 
+        self.biases = [self.bias_init((b_size, )) for b_size in l_sizes[1:]]
+
     def setup_output(self):
         """
         Setup output tensor
@@ -51,11 +54,12 @@ class FFMatrixGen(object):
 
         coordinates = get_coordinates(self.output_shape)
 
-        output = K.sin(K.dot(coordinates, self.weights[0]))
+        output = K.sin(K.dot(coordinates, self.weights[0]) + self.biases[0])
 
         for i in range(1, len(self.weights) - 1):
-            output.append(K.tanh(K.dot(output, self.weights[i])))
-        output = K.sigmoid(K.dot(output, self.weights[-1]))
+            output.append(K.tanh(K.dot(output, self.weights[i]) + self.biases[
+                i]))
+        output = K.sigmoid(K.dot(output, self.weights[-1]) + self.biases[i])
 
         self.output = K.reshape(output, (1, 1, *self.output_shape))
 
