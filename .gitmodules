@@ -1,0 +1,3 @@
+[submodule "ppap-experiments"]
+	path = ppap-experiments
+	url = git@github.com:unique-horn/ppap-experiments.git
