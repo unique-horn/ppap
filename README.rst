@@ -2,4 +2,4 @@
 ppap
 =============================
 
-Pattern Producing Network keras layers
+Pattern Producing Network layers for keras
