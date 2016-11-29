@@ -60,7 +60,7 @@ class FFMatrixGen(object):
             output.append(K.tanh(K.dot(output, self.weights[i]) + self.biases[
                 i]))
         # The last might be wrong, as the i remains the same.
-        output = K.sigmoid(K.dot(output, self.weights[-1]) + self.biases[i])
+        output = K.sigmoid(K.dot(output, self.weights[-1]) + self.biases[-1])
 
         self.output = K.reshape(output, (1, 1, *self.output_shape))
 
