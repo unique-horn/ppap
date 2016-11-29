@@ -1,7 +1,7 @@
 """
 PPN generators
 """
-
+# TODO: Generalized output with one more dimension.
 import numpy as np
 from keras import backend as K
 from keras import initializations
@@ -59,6 +59,7 @@ class FFMatrixGen(object):
         for i in range(1, len(self.weights) - 1):
             output.append(K.tanh(K.dot(output, self.weights[i]) + self.biases[
                 i]))
+        # The last might be wrong, as the i remains the same.
         output = K.sigmoid(K.dot(output, self.weights[-1]) + self.biases[i])
 
         self.output = K.reshape(output, (1, 1, *self.output_shape))
