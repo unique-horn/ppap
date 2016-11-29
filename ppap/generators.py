@@ -39,12 +39,11 @@ class FFMatrixGen(object):
         """
 
         # Layers with input and output
-        l_sizes = [3, *self.layer_sizes, 1]
+        l_sizes = [3] + self.layer_sizes +  [1]
 
-        self.weights = [self.init((l_sizes[i], l_sizes[i + 1]))
-                        for i in range(len(l_sizes) - 1)]
+        self.weights = [self.init((l_sizes[i], l_sizes[i + 1])) for i in range(len(l_sizes) - 1)]
 
-        self.biases = [self.bias_init((b_size, )) for b_size in l_sizes[1:]]
+        self.biases = [self.bias_init((b_size, )) for index, b_size in enumerate(l_sizes[1:])]
 
     def setup_output(self):
         """
