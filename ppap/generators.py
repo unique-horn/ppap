@@ -57,8 +57,8 @@ class FFMatrixGen(object):
         output = K.sin(K.dot(coordinates, self.weights[0]) + self.biases[0])
 
         for i in range(1, len(self.weights) - 1):
-            output.append(K.tanh(K.dot(output, self.weights[i]) + self.biases[
-                i]))
+            output = K.tanh(K.dot(output, self.weights[i]) + self.biases[
+                i])
         # The last might be wrong, as the i remains the same.
         output = K.sigmoid(K.dot(output, self.weights[-1]) + self.biases[-1])
 
