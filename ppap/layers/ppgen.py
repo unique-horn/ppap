@@ -70,8 +70,8 @@ class PPGenMatrix(Layer):
         self.Ws = weights
         self.bs = biases
 
-        self.coordinates = generators.get_coordinates(self.matrix_shape,
-                                                      scale=self.scale)
+        self.coordinates = generators.get_coordinates_2D(self.matrix_shape,
+                                                         scale=self.scale)
 
         self.trainable_weights = self.Ws + self.bs + [self.Wz]
 

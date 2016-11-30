@@ -19,8 +19,8 @@ class PPAdaptiveMask(Layer):
 
         self.output_shape = output_shape
         self.layer_sizes = layer_sizes
-        self.gen = generators.FFMatrixGen(output_shape=output_shape,
-                                          layer_sizes=layer_sizes)
+        self.gen = generators.FFMatrixGen2D(output_shape=output_shape,
+                                            layer_sizes=layer_sizes)
 
         super().__init__(**kwargs)
 
