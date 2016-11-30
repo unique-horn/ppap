@@ -116,7 +116,6 @@ class FFMatrixGen2D:
     def setup_output(self):
         """
         Setup output tensor
-
         """
 
         coordinates = get_coordinates_2D(self.output_shape)
@@ -124,11 +123,10 @@ class FFMatrixGen2D:
         output = K.sin(K.dot(coordinates, self.weights[0]) + self.biases[0])
 
         for i in range(1, len(self.weights) - 1):
-            output.append(K.tanh(K.dot(output, self.weights[i]) + self.biases[
-                i]))
-        output = K.sigmoid(K.dot(output, self.weights[-1]) + self.biases[i])
+            output = K.tanh(K.dot(output, self.weights[i]) + self.biases[i])
+        output = K.sigmoid(K.dot(output, self.weights[-1]) + self.biases[-1])
 
-        self.output = K.reshape(output, (1, 1, *self.output_shape))
+        self.output = K.reshape(output, self.output_shape)
 
 
 def get_coordinates_2D(matrix_shape, scale=5.0):
