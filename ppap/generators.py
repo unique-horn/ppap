@@ -6,7 +6,7 @@ from keras import backend as K
 from keras import initializations
 
 
-class FFMatrixGen(object):
+class FFMatrixGen:
     """
     Simple feed forward generator
     Doesn't take any explicit input
