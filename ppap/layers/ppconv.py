@@ -50,10 +50,9 @@ class PPConv(Layer):
         self.trainable_weights = self.gen_weights + self.gen_bias
         self.non_trainable_weights = [self.W + self.b]
         self.built = True
-        print ("ola")
 
     def call(self, x, mask=None):
-        output = K.conv2d(x, self.W, border_mode="same", strides=self.strides)
+        output = K.conv2d(x, self.W, border_mode=self.border_mode, strides=self.strides)
         output += K.reshape(self.b, (1, self.nb_filters, 1, 1))
         return output
 
