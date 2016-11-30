@@ -2,6 +2,7 @@
 PPN based adaptive masking layers
 """
 
+import keras.backend as K
 from keras.engine.topology import Layer
 
 from .. import generators
@@ -13,13 +14,13 @@ class PPAdaptiveMask(Layer):
     To be used in conjugation with keras.layers.Merge and 'mul' mode
     """
 
-    def __init__(self, output_shape, layer_sizes, **kwargs):
+    def __init__(self, mask_shape, layer_sizes, **kwargs):
         """
         """
 
-        self.output_shape = output_shape
+        self.mask_shape = mask_shape
         self.layer_sizes = layer_sizes
-        self.gen = generators.FFMatrixGen2D(output_shape=output_shape,
+        self.gen = generators.FFMatrixGen2D(output_shape=mask_shape,
                                             layer_sizes=layer_sizes)
 
         super().__init__(**kwargs)
@@ -39,10 +40,10 @@ class PPAdaptiveMask(Layer):
         """
         """
 
-        return self.output_shape
+        return (input_shape[0], 1, *self.mask_shape)
 
     def call(self, x, mask=None):
         """
         """
 
-        return self.mask
+        return K.reshape(self.mask, [1, 1, *self.mask_shape])
