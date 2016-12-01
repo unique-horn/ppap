@@ -44,7 +44,7 @@ class FFMatrixGen:
         """
 
         # Layers with input and output
-        l_sizes = [5] + self.layer_sizes + [1]
+        l_sizes = [3] + self.layer_sizes + [1]
 
         self.weights = [self.init((l_sizes[i], l_sizes[i + 1]))
                         for i in range(len(l_sizes) - 1)]
@@ -207,15 +207,15 @@ def get_coordinates(matrix_shape, input_channels, num_filters, scale=5.0):
     c *= scale
     f *= scale
     # Generate coordinate data
-    X, Y, C, F = np.meshgrid(x, y, c, f)
-    R = np.sqrt((X**2) + (Y**2) + (C**2) + (F**2))
+    X, Y = np.meshgrid(x, y)#, c, f)
+    R = np.sqrt((X**2) + (Y**2))# + (C**2) + (F**2))
 
-    total_items = np.prod(matrix_shape) * num_filters * input_channels
+    total_items = np.prod(matrix_shape)# * num_filters * input_channels
 
     # Flatten
     Y_r = Y.reshape(total_items)
     X_r = X.reshape(total_items)
-    C_r = C.reshape(total_items)
-    F_r = C.reshape(total_items)
+    # C_r = C.reshape(total_items)
+    # F_r = F.reshape(total_items)
     R_r = R.reshape(total_items)
-    return K.variable(value=np.vstack([X_r, Y_r, C_r, F_r, R_r]).T)
+    return K.variable(value=np.vstack([X_r, Y_r, R_r]).T)
