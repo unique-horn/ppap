@@ -14,14 +14,16 @@ class PPAdaptiveMask(Layer):
     To be used in conjugation with keras.layers.Merge and 'mul' mode
     """
 
-    def __init__(self, mask_shape, layer_sizes, **kwargs):
+    def __init__(self, mask_shape, layer_sizes, scale, **kwargs):
         """
         """
 
         self.mask_shape = mask_shape
         self.layer_sizes = layer_sizes
+        self.scale = scale
         self.gen = generators.FFMatrixGen2D(output_shape=mask_shape,
-                                            layer_sizes=layer_sizes)
+                                            layer_sizes=layer_sizes,
+                                            scale=scale)
 
         super().__init__(**kwargs)
 

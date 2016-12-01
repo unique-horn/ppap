@@ -80,7 +80,11 @@ class FFMatrixGen2D:
     Simple feed forward generator
     """
 
-    def __init__(self, output_shape, layer_sizes, init="glorot_uniform"):
+    def __init__(self,
+                 output_shape,
+                 layer_sizes,
+                 scale,
+                 init="glorot_uniform"):
         """
         Parameters
         ----------
@@ -95,6 +99,7 @@ class FFMatrixGen2D:
         self.layer_sizes = layer_sizes
         self.init = initializations.get(init)
         self.bias_init = initializations.get("zero")
+        self.scale = scale
 
         self.setup_weights()
         self.setup_output()
@@ -118,7 +123,7 @@ class FFMatrixGen2D:
         Setup output tensor
         """
 
-        coordinates = get_coordinates_2D(self.output_shape)
+        coordinates = get_coordinates_2D(self.output_shape, scale=self.scale)
 
         output = K.sin(K.dot(coordinates, self.weights[0]) + self.biases[0])
 
