@@ -3,6 +3,7 @@ Dynamic filtering layers using PPNs
 """
 
 import keras.backend as K
+import numpy as np
 from keras.engine.topology import Layer
 from keras.utils.np_utils import conv_output_length
 
@@ -13,17 +14,25 @@ class PPDFN(Layer):
     """
     Basic Dynamic filtering layer.
     Takes input of shape (batch_size, channels, rows, columns)
-    and returns output of shape (batch_size, filters, rows, columns)
+    and returns output of shape (batch_size, channels, rows, columns)
     ; 'th' ordering noted
     """
 
-    def __init__(self, n_filters, n_rows, n_cols, **kwargs):
+    def __init__(self, filter_size, n_rows, n_cols, **kwargs):
         """
+        Parameters:
+        -----------
+        filter_size : int
+            Size of filter along 1 dimension
+        n_rows: int
+            Number of rows in image
+        n_cols: int
+            Number of columns in image
         """
 
         # Use set_image_dim_ordering global to control this
         self.dim_ordering = K.image_dim_ordering()
-        self.n_filters = n_filters
+        self.filter_size = filter_size
         self.n_rows = n_rows
         self.n_cols = n_cols
         self.border_mode = "same"
@@ -44,7 +53,7 @@ class PPDFN(Layer):
             rows = input_shape[1]
             cols = input_shape[2]
 
-        self.gen = generators.PPDFGen(self.n_filters, (rows, cols))
+        self.gen = generators.PPDFGen(self.filter_size, (rows, cols))
         self.trainable_weights = self.gen.weights + self.gen.biases
 
         self.built = True
@@ -66,9 +75,9 @@ class PPDFN(Layer):
                                   self.strides[1])
 
         if self.dim_ordering == "th":
-            return (input_shape[0], self.nb_filter, rows, cols)
+            return (input_shape[0], self.filters_in, rows, cols)
         elif self.dim_ordering == "tf":
-            return (input_shape[0], rows, cols, self.nb_filter)
+            return (input_shape[0], rows, cols, self.filters_in)
 
     def call(self, x, mask=None):
         """
@@ -84,5 +93,41 @@ class PPDFN(Layer):
         # Do an elementwise dot with filter and dimension reduction on channel
         # axis
 
+        # Generated filter tensors
         filters = self.gen.get_output(x)
-        pass
+
+        # Alias
+        fs = self.filter_size
+        # Aux convolution to shift the images
+        if self.dim_ordering == "th":
+            shifter_shape = (fs**2, 1, fs, fs)
+            ch_axis = 1
+        elif self.dim_ordering == "tf":
+            shifter_shape = (fs**2, fs, fs, 1)
+            ch_axis = 3
+
+        shifter = np.reshape(
+            np.eye(self.filter_size**2, self.filter_size**2), shifter_shape)
+
+        shifter = K.variable(value=shifter)
+
+        # Use same filter in all channels and return same number of channels
+        outputs = []
+        for i in range(x.shape[1]):
+            if self.dim_ordering == "th":
+                x_channel = x[:, [i], :, :]
+            elif self.dim_ordering == "tf":
+                x_channel = x[:, :, :, [i]]
+
+            # This creates shifted version of x in all direction
+            # When stacked together and summed after elemwise mult with
+            # filters, this results in an effective convolution
+            x_shifted = K.conv2d(x_channel,
+                                 shifter,
+                                 strides=self.strides,
+                                 border_mode=self.border_mode)
+
+            output = K.sum(x_shifted * filters, axis=ch_axis, keepdims=True)
+            outputs.append(output)
+
+        return K.concatenate(outputs, axis=ch_axis)
