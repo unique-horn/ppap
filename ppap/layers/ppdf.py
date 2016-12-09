@@ -130,4 +130,9 @@ class PPDFN(Layer):
             output = K.sum(x_shifted * filters, axis=ch_axis, keepdims=True)
             outputs.append(output)
 
-        return K.concatenate(outputs, axis=ch_axis)
+        output = K.concatenate(outputs, axis=ch_axis)
+
+        # Save current filter for viz
+        self.filters = np.reshape(filters, (self.batch_size, fs, fs,
+                                            self.n_rows, self.n_cols))
+        return output
