@@ -44,7 +44,7 @@ class PPDFN(Layer):
         """
         """
 
-        batch_size, self.filters_in = input_shape[:2]
+        self.batch_size, self.filters_in = input_shape[:2]
 
         if self.dim_ordering == "th":
             rows = input_shape[2]
@@ -69,9 +69,9 @@ class PPDFN(Layer):
             rows = input_shape[1]
             cols = input_shape[2]
 
-        rows = conv_output_length(rows, self.nb_row, self.border_mode,
+        rows = conv_output_length(rows, self.filter_size, self.border_mode,
                                   self.strides[0])
-        cols = conv_output_length(cols, self.nb_col, self.border_mode,
+        cols = conv_output_length(cols, self.filter_size, self.border_mode,
                                   self.strides[1])
 
         if self.dim_ordering == "th":
@@ -94,7 +94,7 @@ class PPDFN(Layer):
         # axis
 
         # Generated filter tensors
-        filters = self.gen.get_output(x)
+        filters = self.gen.get_output(x, self.batch_size)
 
         # Alias
         fs = self.filter_size
@@ -106,14 +106,13 @@ class PPDFN(Layer):
             shifter_shape = (fs**2, fs, fs, 1)
             ch_axis = 3
 
-        shifter = np.reshape(
-            np.eye(self.filter_size**2, self.filter_size**2), shifter_shape)
+        shifter = np.reshape(np.eye(fs**2, fs**2), shifter_shape)
 
         shifter = K.variable(value=shifter)
 
         # Use same filter in all channels and return same number of channels
         outputs = []
-        for i in range(x.shape[1]):
+        for i in range(self.filters_in):
             if self.dim_ordering == "th":
                 x_channel = x[:, [i], :, :]
             elif self.dim_ordering == "tf":
@@ -125,7 +124,8 @@ class PPDFN(Layer):
             x_shifted = K.conv2d(x_channel,
                                  shifter,
                                  strides=self.strides,
-                                 border_mode=self.border_mode)
+                                 border_mode=self.border_mode,
+                                 dim_ordering=self.dim_ordering)
 
             output = K.sum(x_shifted * filters, axis=ch_axis, keepdims=True)
             outputs.append(output)

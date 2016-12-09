@@ -227,59 +227,23 @@ class FFGenZ:
         return K.reshape(output, (z.shape[0], *self.output_shape))
 
 
-class DFGen:
-    """
-    Local dynamic filter generator without coordinate data
-    """
-
-    def __init__(self, n_filters, input_shape):
-        """
-        Parameters:
-        -----------
-        n_filters : int
-            Size of filter
-        input_shape: list_like
-            Size of input image this filter is working on. This is used for
-            generating separate filters for each pixel position of the image
-        """
-
-        self.n_filters = n_filters
-        self.input_shape = input_shape
-
-        self.setup_weights()
-
-    def setup_weights(self):
-        """
-        Setup trainable weights and biases
-        """
-
-        pass
-
-    def get_output(self, x):
-        """
-        Generate filters for given input
-        """
-
-        pass
-
-
 class PPDFGen:
     """
     Local dynamic filter generator that uses coordinate data
     """
 
-    def __init__(self, n_filters, input_shape):
+    def __init__(self, filter_size, input_shape):
         """
         Parameters:
         -----------
-        n_filters : int
-            Size of filter
+        filter_size : int
+            Size of the filter in 1 dimension (total = filter_size ** 2)
         input_shape: list_like
             Size of input image this filter is working on. This is used for
             generating separate filters for each pixel position of the image
         """
 
-        self.n_filters = n_filters
+        self.filter_size = filter_size
         self.input_shape = input_shape
 
         self.setup_weights()
@@ -289,14 +253,26 @@ class PPDFGen:
         Setup trainable weights and biases
         """
 
-        pass
+        self.weights = []
+        self.biases = []
 
-    def get_output(self, x):
+    def get_output(self, x, batch_size):
         """
         Generate filters for given input
         """
 
-        pass
+        # Assuming 'th' ordering
+        # Input shape (batch, channels, rows, columns)
+        # Output shape (batch, filter_size ** 2, rows, columns)
+        #
+        # One idea might be to use a conv op on input => flatten it
+        # => pass it as a z vector to the usual coordinates based generator
+
+        batch_size, filters_in = x.shape[:2]
+
+        fs = self.filter_size
+
+        return np.random.rand(20, fs**2, *self.input_shape)
 
 
 def get_coordinates_2D(matrix_shape, scale=5.0):
