@@ -44,7 +44,7 @@ class FFMatrixGen:
         """
 
         # Layers with input and output
-        l_sizes = [6] + self.layer_sizes + [1]
+        l_sizes = [9] + self.layer_sizes + [1]
 
         self.weights = [self.init((l_sizes[i], l_sizes[i + 1]))
                         for i in range(len(l_sizes) - 1)]
@@ -52,6 +52,7 @@ class FFMatrixGen:
         self.biases = [self.bias_init((b_size, ))
                        for index, b_size in enumerate(l_sizes[1:])]
 
+        self.z = self.init((1, 4))
     def setup_output(self):
         """
         Setup output tensor
@@ -61,6 +62,10 @@ class FFMatrixGen:
         coordinates = get_coordinates(self.output_shape,
                                       input_channels=self.input_channels,
                                       num_filters=self.num_filters)
+
+        num_parameters = coordinates.shape[0]
+        self.z_r = K.repeat_elements(self.z, rep=num_parameters, axis=0)
+        coordinates = K.concatenate([self.z_r, coordinates], axis=1)
 
         output = K.tanh(K.dot(coordinates, self.weights[0]) + self.biases[0])
 
@@ -363,8 +368,6 @@ def get_coordinates(matrix_shape, input_channels, num_filters, scale=1.0):
 
     # Random variable
     Rand = K.random_uniform_variable(shape=(Y_r.shape[0], 1), low=0, high=1)
-    print(Rand.eval().shape)
     coordinates = K.variable(value=np.vstack([X_r, Y_r, C_r, F_r, R_r]).T)
-    print(coordinates.eval().shape)
-    coordinates = K.concatenate([Rand, coordinates], axis=1)
+    # coordinates = K.concatenate([Rand, coordinates], axis=1)
     return coordinates
