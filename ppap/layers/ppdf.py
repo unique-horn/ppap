@@ -18,23 +18,17 @@ class PPDFN(Layer):
     ; 'th' ordering noted
     """
 
-    def __init__(self, filter_size, n_rows, n_cols, **kwargs):
+    def __init__(self, filter_size, **kwargs):
         """
         Parameters:
         -----------
         filter_size : int
             Size of filter along 1 dimension
-        n_rows: int
-            Number of rows in image
-        n_cols: int
-            Number of columns in image
         """
 
         # Use set_image_dim_ordering global to control this
         self.dim_ordering = K.image_dim_ordering()
         self.filter_size = filter_size
-        self.n_rows = n_rows
-        self.n_cols = n_cols
         self.border_mode = "same"
         self.strides = (1, 1)
 
@@ -44,16 +38,20 @@ class PPDFN(Layer):
         """
         """
 
-        self.batch_size, self.filters_in = input_shape[:2]
+        self.batch_size = input_shape[0]
 
         if self.dim_ordering == "th":
-            rows = input_shape[2]
-            cols = input_shape[3]
+            self.n_rows = input_shape[2]
+            self.n_cols = input_shape[3]
+            self.filters_in = input_shape[1]
         elif self.dim_ordering == "tf":
-            rows = input_shape[1]
-            cols = input_shape[2]
+            self.n_rows = input_shape[1]
+            self.n_cols = input_shape[2]
+            self.filters_in = input_shape[3]
 
-        self.gen = generators.PPDFGen(self.filter_size, (rows, cols))
+        self.gen = generators.PPDFGen(self.filter_size,
+                                      (self.n_rows, self.n_cols),
+                                      self.filters_in, self.batch_size)
         self.trainable_weights = self.gen.weights + self.gen.biases
 
         self.built = True
@@ -62,17 +60,10 @@ class PPDFN(Layer):
         """
         """
 
-        if self.dim_ordering == "th":
-            rows = input_shape[2]
-            cols = input_shape[3]
-        elif self.dim_ordering == "tf":
-            rows = input_shape[1]
-            cols = input_shape[2]
-
-        rows = conv_output_length(rows, self.filter_size, self.border_mode,
-                                  self.strides[0])
-        cols = conv_output_length(cols, self.filter_size, self.border_mode,
-                                  self.strides[1])
+        rows = conv_output_length(self.n_rows, self.filter_size,
+                                  self.border_mode, self.strides[0])
+        cols = conv_output_length(self.n_cols, self.filter_size,
+                                  self.border_mode, self.strides[1])
 
         if self.dim_ordering == "th":
             return (input_shape[0], self.filters_in, rows, cols)
@@ -94,7 +85,7 @@ class PPDFN(Layer):
         # axis
 
         # Generated filter tensors
-        filters = self.gen.get_output(x, self.batch_size)
+        filters = self.gen.get_output(x)
 
         # Alias
         fs = self.filter_size
@@ -121,18 +112,16 @@ class PPDFN(Layer):
             # This creates shifted version of x in all direction
             # When stacked together and summed after elemwise mult with
             # filters, this results in an effective convolution
-            x_shifted = K.conv2d(x_channel,
-                                 shifter,
-                                 strides=self.strides,
-                                 border_mode=self.border_mode,
-                                 dim_ordering=self.dim_ordering)
+            x_shifted = K.conv2d(
+                x_channel,
+                shifter,
+                strides=self.strides,
+                border_mode=self.border_mode,
+                dim_ordering=self.dim_ordering)
 
             output = K.sum(x_shifted * filters, axis=ch_axis, keepdims=True)
             outputs.append(output)
 
         output = K.concatenate(outputs, axis=ch_axis)
 
-        # Save current filter for viz
-        self.filters = np.reshape(filters, (self.batch_size, fs, fs,
-                                            self.n_rows, self.n_cols))
         return output
