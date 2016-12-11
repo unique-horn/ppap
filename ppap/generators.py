@@ -80,7 +80,7 @@ class FFMatrixGen:
                                          *self.output_shape))
 
 
-class HyperNeatgen:
+class HyperNetwork(object):
     """
     Simple feed forward generator
     Doesn't take any explicit input
