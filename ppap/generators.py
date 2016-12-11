@@ -44,7 +44,7 @@ class FFMatrixGen:
         """
 
         # Layers with input and output
-        l_sizes = [9] + self.layer_sizes + [1]
+        l_sizes = [4] + self.layer_sizes + [1]
 
         self.weights = [self.init((l_sizes[i], l_sizes[i + 1]))
                         for i in range(len(l_sizes) - 1)]
@@ -63,15 +63,87 @@ class FFMatrixGen:
                                       input_channels=self.input_channels,
                                       num_filters=self.num_filters)
 
-        num_parameters = coordinates.shape[0]
-        self.z_r = K.repeat_elements(self.z, rep=num_parameters, axis=0)
-        coordinates = K.concatenate([self.z_r, coordinates], axis=1)
+        num_parameters = np.prod(self.output_shape) * self.num_filters * \
+                         self.input_channels
+        print (num_parameters)
+        # self.z_r = K.repeat_elements(self.z, rep=num_parameters, axis=0)
+        self.z_r = self.init((num_parameters, 4))
+        # coordinates = K.concatenate([self.z_r, coordinates], axis=1)
 
-        output = K.tanh(K.dot(coordinates, self.weights[0]) + self.biases[0])
+        output = K.tanh(K.dot(self.z_r, self.weights[0]) + self.biases[0])
 
         for i in range(1, len(self.weights) - 1):
             output = K.tanh(K.dot(output, self.weights[i]) + self.biases[i])
         output = K.sigmoid(K.dot(output, self.weights[-1]) + self.biases[-1])
+
+        self.output = K.reshape(output, (self.num_filters, self.input_channels,
+                                         *self.output_shape))
+
+
+class HyperNeatgen:
+    """
+    Simple feed forward generator
+    Doesn't take any explicit input
+    """
+
+    def __init__(self,
+                 input_channels,
+                 output_shape,
+                 num_filters,
+                 hidden_dim,
+                 init="glorot_uniform"):
+        """
+        Parameters
+        ----------
+        output_shape : list_like
+            Size of the generated matrix (x, y)
+        layer_sizes : array_like
+            List of nodes in hidden layers
+        init : str
+            Keras initializer to use for weights
+        """
+        self.input_channels = input_channels
+        self.num_filters = num_filters
+        self.output_shape = output_shape
+        self.hidden_dim = hidden_dim
+        self.init = initializations.get(init)
+        self.bias_init = initializations.get("zero")
+
+        self.setup_weights()
+        self.setup_output()
+        self.num_param = np.prod(self.output_shape) * self.num_filters * \
+                         self.input_channels
+
+
+    def setup_weights(self):
+        """
+        Setup weights for the generator
+        """
+
+        # Layers with input and output
+        l_sizes = [4] + [self.hidden_dim] + [np.prod(self.output_shape) *
+                                          self.num_filters *
+                                          self.input_channels]
+        w1 = self.init((4, self.hidden_dim * self.input_channels))
+        b1 = self.bias_init((self.hidden_dim * self.input_channels))
+
+        w2 = self.init((self.hidden_dim, np.prod(self.output_shape) *
+                        self.num_filters )) # (hid X 3*3*33)
+        b2 = self.bias_init((np.prod(self.output_shape) *
+                        self.num_filters))
+        self.z = self.init((1, 4))
+        self.weights = [w1, w2]
+        self.biases = [b1, b2]
+    def setup_output(self):
+        """
+        Setup output tensor
+
+        """
+        hidden = K.dot(self.z, self.weights[0]) + self.biases[0]
+        hidden = K.reshape(hidden, shape=(self.input_channels,
+                                          self.hidden_dim))
+
+        output = K.dot(hidden, self.weights[1]) + self.biases[1]
 
         self.output = K.reshape(output, (self.num_filters, self.input_channels,
                                          *self.output_shape))
