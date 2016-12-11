@@ -47,7 +47,8 @@ class PPConv(Layer):
         self.gen_weights = self.ppn_gen.weights # Weight of the generator
         self.gen_bias = self.ppn_gen.biases
         self.b = K.zeros((self.nb_filters))
-        self.trainable_weights = self.gen_weights + self.gen_bias
+        self.trainable_weights = self.gen_weights + self.gen_bias + [
+            self.ppn_gen.z_r]
         self.non_trainable_weights = [self.W + self.b]
         self.built = True
 
