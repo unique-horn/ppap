@@ -344,12 +344,12 @@ class PPDFGen:
 
         self.coordinates_weights = self.init((3, 5))
 
-        self.w1 = self.init((15, 20))
+        self.w1 = self.init((10, 20))
         self.b1 = self.b_init((20,))
         self.w2 = self.init((20, self.filter_size**2))
         self.b2 = self.b_init((self.filter_size**2, ))
 
-        self.weights = [self.kernel1, self.coordinates_weights,
+        self.weights = [self.kernel1, #self.coordinates_weights,
                         self.w1, self.w2]
         self.biases = [self.b1, self.b2]
 
@@ -358,7 +358,7 @@ class PPDFGen:
 
         # (rows * columns, 5)
         coordinates = K.dot(coordinates, self.coordinates_weights)
-        coordinates = K.sin(coordinates)
+        # coordinates = K.sin(coordinates)
 
         # (1, 5, rows, columns)
         coordinates = K.reshape(coordinates, (1, 5, *self.input_shape))
@@ -385,7 +385,7 @@ class PPDFGen:
         output = K.relu(K.conv2d(x, self.kernel1, border_mode="same"))
 
         # (batch, 15, rows, columns)
-        output = K.concatenate([output, self.coordinates], axis=1)
+        # output = K.concatenate([output, self.coordinates], axis=1)
 
         # (batch, rows, columns, 15)
         output = K.permute_dimensions(output, (0, 2, 3, 1))
