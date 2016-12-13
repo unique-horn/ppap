@@ -4,6 +4,7 @@ PPN generators
 import numpy as np
 from keras import backend as K
 from keras import initializations
+from keras.utils.np_utils import conv_output_length
 
 
 class FFMatrixGen:
@@ -309,7 +310,7 @@ class PPDFGen:
     Local dynamic filter generator that uses coordinate data
     """
 
-    def __init__(self, filter_size, input_shape):
+    def __init__(self, filter_size, input_shape, filters_in, batch_size):
         """
         Parameters:
         -----------
@@ -318,10 +319,17 @@ class PPDFGen:
         input_shape: list_like
             Size of input image this filter is working on. This is used for
             generating separate filters for each pixel position of the image
+        filter_in : int
+            Number of channels in input
+        batch_size : int
+            Batch size
         """
 
         self.filter_size = filter_size
         self.input_shape = input_shape
+        self.filters_in = filters_in
+        self.batch_size = batch_size
+        self.init = initializations.get("glorot_uniform")
 
         self.setup_weights()
 
@@ -330,10 +338,40 @@ class PPDFGen:
         Setup trainable weights and biases
         """
 
-        self.weights = []
+        # Using equal values of each thing initially (should try changing this)
+        self.coordinate_weights = K.variable([1 / 3, 1 / 3, 1 / 3])
+        self.kernel_one = self.init((1,
+                                     self.filters_in,
+                                     self.filter_size,
+                                     self.filter_size))
+
+        r = conv_output_length(self.input_shape[0], self.filter_size, "valid", 1)
+        c = conv_output_length(self.input_shape[1], self.filter_size, "valid", 1)
+
+        self.conv_out_length = r * c
+        self.w_one = self.init((r * c, self.filter_size ** 2))
+
+        self.weights = [self.coordinate_weights, self.kernel_one, self.w_one]
         self.biases = []
 
-    def get_output(self, x, batch_size):
+        # (rows * columns, 3)
+        coordinates = get_coordinates_2D(self.input_shape, scale=1.0)
+
+        # Reshape to simpler form
+        # (rows, columns, 3)
+        coordinates = K.reshape(coordinates, (*self.input_shape, 3))
+
+        # Reduce the 3 coordinate dimensions
+        # (rows, columns)
+        coordinates = K.dot(coordinates, self.coordinate_weights)
+
+        # (1, 1, rows, columns)
+        coordinates = K.reshape(coordinates, (1, 1, *self.input_shape))
+        coordinates = K.repeat_elements(coordinates, self.batch_size, 0)
+        coordinates = K.repeat_elements(coordinates, self.filter_size**2, 1)
+        self.coordinates = coordinates
+
+    def get_output(self, x):
         """
         Generate filters for given input
         """
@@ -345,11 +383,23 @@ class PPDFGen:
         # One idea might be to use a conv op on input => flatten it
         # => pass it as a z vector to the usual coordinates based generator
 
-        batch_size, filters_in = x.shape[:2]
-
         fs = self.filter_size
 
-        return np.random.rand(20, fs**2, *self.input_shape)
+        # Use input to generate filter
+        output = K.relu(K.conv2d(x, self.kernel_one, dim_ordering="th"))
+
+        # (batch, r * c)
+        output = K.reshape(output, (self.batch_size, self.conv_out_length))
+
+        # (batch, fs**2)
+        output = K.tanh(K.dot(output, self.w_one))
+
+        # (batch, fs**2, 1, 1)
+        output = K.reshape(output, (self.batch_size, fs**2, 1, 1))
+        output = K.repeat_elements(output, self.input_shape[0], -2)
+        output = K.repeat_elements(output, self.input_shape[1], -1)
+
+        return output * self.coordinates
 
 
 def get_coordinates_2D(matrix_shape, scale=5.0):
