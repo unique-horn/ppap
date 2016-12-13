@@ -330,6 +330,7 @@ class PPDFGen:
         self.filters_in = filters_in
         self.batch_size = batch_size
         self.init = initializations.get("glorot_uniform")
+        self.b_init = initializations.get("zero")
 
         self.setup_weights()
 
@@ -338,37 +339,33 @@ class PPDFGen:
         Setup trainable weights and biases
         """
 
-        # Using equal values of each thing initially (should try changing this)
-        self.coordinate_weights = K.variable([1 / 3, 1 / 3, 1 / 3])
-        self.kernel_one = self.init((1,
-                                     self.filters_in,
-                                     self.filter_size,
-                                     self.filter_size))
+        # Generate feature maps for each pixel
+        self.kernel1 = self.init((10, self.filters_in, 5, 5))
 
-        r = conv_output_length(self.input_shape[0], self.filter_size, "valid", 1)
-        c = conv_output_length(self.input_shape[1], self.filter_size, "valid", 1)
+        self.coordinates_weights = self.init((3, 5))
 
-        self.conv_out_length = r * c
-        self.w_one = self.init((r * c, self.filter_size ** 2))
+        self.w1 = self.init((15, 20))
+        self.b1 = self.b_init((20,))
+        self.w2 = self.init((20, self.filter_size**2))
+        self.b2 = self.b_init((self.filter_size**2, ))
 
-        self.weights = [self.coordinate_weights, self.kernel_one, self.w_one]
-        self.biases = []
+        self.weights = [self.kernel1, self.coordinates_weights,
+                        self.w1, self.w2]
+        self.biases = [self.b1, self.b2]
 
         # (rows * columns, 3)
         coordinates = get_coordinates_2D(self.input_shape, scale=1.0)
 
-        # Reshape to simpler form
-        # (rows, columns, 3)
-        coordinates = K.reshape(coordinates, (*self.input_shape, 3))
+        # (rows * columns, 5)
+        coordinates = K.dot(coordinates, self.coordinates_weights)
+        coordinates = K.sin(coordinates)
 
-        # Reduce the 3 coordinate dimensions
-        # (rows, columns)
-        coordinates = K.dot(coordinates, self.coordinate_weights)
+        # (1, 5, rows, columns)
+        coordinates = K.reshape(coordinates, (1, 5, *self.input_shape))
 
-        # (1, 1, rows, columns)
-        coordinates = K.reshape(coordinates, (1, 1, *self.input_shape))
+        # (batch, 5, rows, columns)
         coordinates = K.repeat_elements(coordinates, self.batch_size, 0)
-        coordinates = K.repeat_elements(coordinates, self.filter_size**2, 1)
+
         self.coordinates = coordinates
 
     def get_output(self, x):
@@ -383,23 +380,25 @@ class PPDFGen:
         # One idea might be to use a conv op on input => flatten it
         # => pass it as a z vector to the usual coordinates based generator
 
-        fs = self.filter_size
-
         # Use input to generate filter
-        output = K.relu(K.conv2d(x, self.kernel_one, dim_ordering="th"))
+        # (batch, 10, rows, columns)
+        output = K.relu(K.conv2d(x, self.kernel1, border_mode="same"))
 
-        # (batch, r * c)
-        output = K.reshape(output, (self.batch_size, self.conv_out_length))
+        # (batch, 15, rows, columns)
+        output = K.concatenate([output, self.coordinates], axis=1)
 
-        # (batch, fs**2)
-        output = K.tanh(K.dot(output, self.w_one))
+        # (batch, rows, columns, 15)
+        output = K.permute_dimensions(output, (0, 2, 3, 1))
 
-        # (batch, fs**2, 1, 1)
-        output = K.reshape(output, (self.batch_size, fs**2, 1, 1))
-        output = K.repeat_elements(output, self.input_shape[0], -2)
-        output = K.repeat_elements(output, self.input_shape[1], -1)
+        # (batch, rows, columns, 20)
+        output = K.tanh(K.dot(output, self.w1) + self.b1)
+        # (batch, rows, columns, fs**2)
+        output = K.tanh(K.dot(output, self.w2) + self.b2)
 
-        return output * self.coordinates
+        # (batch, fs**2, rows, columns)
+        output = K.permute_dimensions(output, (0, 3, 1, 2))
+
+        return output
 
 
 def get_coordinates_2D(matrix_shape, scale=5.0):
