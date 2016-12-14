@@ -344,7 +344,7 @@ class PPDFGen:
 
         self.coordinates_weights = self.init((3, 5))
 
-        self.w1 = self.init((10, 20))
+        self.w1 = self.init((15, 20))
         self.b1 = self.b_init((20,))
         self.w2 = self.init((20, self.filter_size**2))
         self.b2 = self.b_init((self.filter_size**2, ))

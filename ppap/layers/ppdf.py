@@ -126,6 +126,7 @@ class PPDFN(Layer):
 
         return output
 
+
 class DFN(Layer):
     """
     Dynamic filtering layer.
