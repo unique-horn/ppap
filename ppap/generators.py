@@ -342,23 +342,23 @@ class PPDFGen:
         # Generate feature maps for each pixel
         self.kernel1 = self.init((10, self.filters_in, 5, 5))
 
-        self.coordinates_weights = self.init((3, 5))
+        self.coordinates_weights = self.init((4, 5))
 
-        self.w1 = self.init((15, 20))
-        self.b1 = self.b_init((20,))
-        self.w2 = self.init((20, self.filter_size**2))
+        # self.w1 = self.init((15, 20))
+        # self.b1 = self.b_init((20,))
+        self.w2 = self.init((15, self.filter_size**2))
         self.b2 = self.b_init((self.filter_size**2, ))
 
         self.weights = [self.kernel1, self.coordinates_weights,
-                        self.w1, self.w2]
-        self.biases = [self.b1, self.b2]
+                        self.w2]
+        self.biases = [self.b2]
 
         # (rows * columns, 3)
-        coordinates = get_coordinates_2D(self.input_shape, scale=1.0)
+        coordinates = get_coordinates_2D(self.input_shape)
 
         # (rows * columns, 5)
         coordinates = K.dot(coordinates, self.coordinates_weights)
-        # coordinates = K.sin(coordinates)
+        coordinates = K.sin(coordinates)
 
         # (1, 5, rows, columns)
         coordinates = K.reshape(coordinates, (1, 5, *self.input_shape))
@@ -388,7 +388,7 @@ class PPDFGen:
         output = K.permute_dimensions(output, (0, 2, 3, 1))
 
         # (batch, rows, columns, 20)
-        output = K.tanh(K.dot(output, self.w1) + self.b1)
+        # output = K.tanh(K.dot(output, self.w1) + self.b1)
         # (batch, rows, columns, fs**2)
         output = K.tanh(K.dot(output, self.w2) + self.b2)
 
@@ -396,6 +396,75 @@ class PPDFGen:
         output = K.permute_dimensions(output, (0, 3, 1, 2))
 
         return output
+
+class PPFGen:
+    """
+    Local dynamic filter generator that uses only coordinate data
+    """
+
+    def __init__(self, filter_size, input_shape, filters_in, batch_size):
+        """
+        Parameters:
+        -----------
+        filter_size : int
+            Size of the filter in 1 dimension (total = filter_size ** 2)
+        input_shape: list_like
+            Size of input image this filter is working on. This is used for
+            generating separate filters for each pixel position of the image
+        filter_in : int
+            Number of channels in input
+        batch_size : int
+            Batch size
+        """
+
+        self.filter_size = filter_size
+        self.input_shape = input_shape
+        self.filters_in = filters_in
+        self.batch_size = batch_size
+        self.init = initializations.get("glorot_uniform")
+        self.b_init = initializations.get("zero")
+
+        self.setup_weights()
+
+    def setup_weights(self):
+        """
+        Setup trainable weights and biases
+        """
+
+        self.coordinates_weights = self.init((4, 10))
+
+        self.w2 = self.init((10, self.filter_size**2))
+        self.b2 = self.b_init((self.filter_size**2, ))
+
+        self.weights = [self.coordinates_weights,
+                        self.w2]
+        self.biases = [self.b2]
+
+        # (rows * columns, 4)
+        coordinates = get_coordinates_2D(self.input_shape)
+
+        # (rows * columns, 10)
+        coordinates = K.dot(coordinates, self.coordinates_weights)
+        coordinates = K.sin(coordinates)
+
+        coordinates = K.dot(coordinates, self.w2) + self.b2
+
+        # (1, fs**2, rows, columns)
+        coordinates = K.reshape(coordinates, (1, self.filter_size**2,
+                                              *self.input_shape))
+
+        # (batch, fs**2, rows, columns)
+        coordinates = K.repeat_elements(coordinates, self.batch_size, 0)
+
+        self.coordinates = coordinates
+
+    def get_output(self, x):
+        """
+        Generate filters for given input
+        """
+
+        return self.coordinates
+
 
 class DFGen:
     """
@@ -434,13 +503,13 @@ class DFGen:
         # Generate feature maps for each pixel
         self.kernel1 = self.init((15, self.filters_in, 5, 5))
 
-        self.w1 = self.init((15, 20))
-        self.b1 = self.b_init((20,))
-        self.w2 = self.init((20, self.filter_size**2))
+        #self.w1 = self.init((15, 20))
+        #self.b1 = self.b_init((20,))
+        self.w2 = self.init((15, self.filter_size**2))
         self.b2 = self.b_init((self.filter_size**2, ))
 
-        self.weights = [self.kernel1, self.w1, self.w2]
-        self.biases = [self.b1, self.b2]
+        self.weights = [self.kernel1, self.w2]
+        self.biases = [self.b2]
 
     def get_output(self, x):
         """
@@ -459,7 +528,7 @@ class DFGen:
         output = K.permute_dimensions(output, (0, 2, 3, 1))
 
         # (batch, rows, columns, 20)
-        output = K.tanh(K.dot(output, self.w1) + self.b1)
+        # output = K.tanh(K.dot(output, self.w1) + self.b1)
         # (batch, rows, columns, fs**2)
         output = K.tanh(K.dot(output, self.w2) + self.b2)
 
@@ -507,7 +576,8 @@ def get_coordinates_2D(matrix_shape, scale=5.0):
     Y_r = Y.reshape(total_items)
     X_r = X.reshape(total_items)
     R_r = R.reshape(total_items)
-    return K.variable(value=np.vstack([X_r, Y_r, R_r]).T)
+    One_r = np.ones((total_items,))
+    return K.variable(value=np.vstack([X_r, Y_r, R_r, One_r]).T)
 
 
 def get_coordinates(matrix_shape, input_channels, num_filters, scale=1.0):
